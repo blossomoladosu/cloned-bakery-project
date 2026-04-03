@@ -5,7 +5,8 @@ from datetime import datetime
 import uuid
 import time
 
-st.set_page_config(page_title="Blossom and Nandika's Bakery Delights", layout="centered",initial_sidebar_state="expanded")
+st.set_page_config(page_title="Blossom and Nandika's Bakery Delights", 
+                   layout="centered",initial_sidebar_state="expanded")
 st.title("Blossom and Nandika's Bakery Delights")
 
 if "logged_in" not in st.session_state:
@@ -43,97 +44,145 @@ if json_order.exists():
     with open(json_order, "r") as f:
         orders = json.load(f)
 
-    if st.button("Login as Owner", key="owner_btn",type="primary",use_container_width=True):
-        st.session_state["page"] = "Owner"
-        st.rerun()
-
 if st.session_state['role'] == 'Customer':
     if st.session_state['page'] == 'Home':
         st.markdown('Welcome! This is the Customer Dashboard!')
         st.markdown("## Here, you can browse our delicious bakery items and place your orders!")
-        if st.button("Login as Customer", key="customer_btn",type="primary",use_container_width=True):
-            st.session_state["page"] = "Customer"
-            st.rerun()
 
-        tab1, tab2, tab3 = st.tabs(["Add New Order", "Cancel an Order"])
+        tab1, tab2 = st.tabs(["Add New Order", "Cancel an Order"])
         
         with tab1:
+            st.markdown("### Place your order!")
             col1, col2 = st.columns([3,3])
             with col1:
                 selected_item = st.selectbox("Items", options=inventory, key= "inventory_selector",
                                         format_func= lambda x: f"{x['name']}")
-            quantity = st.number_input("Enter the Quantity", min_value= 1, step=1)
+                quantity = st.number_input("Enter the Quantity", min_value= 1, step=1)
 
-            if st.button("Create New Order", key="create_order_btn", type="primary", use_container_width=True):
-                with st.spinner("Recording the new order..."):
-                    total = quantity * selected_item["unit_price"]
+                if st.button("Create New Order", key="create_order_btn", type="primary", use_container_width=True):
+                    if quantity > selected_item['stock']: 
+                        st.error('Sorry, we are currently sold out of that item. Please select a lower quantity or try again later.')
+                    else:
+                        with st.spinner("Recording the new order..."):
+                            total = quantity * selected_item["price"]
 
-                    for item in inventory:
-                        if item["item_id"] == selected_item["item_id"]:
-                            item["stock"] = item["stock"] - quantity
-                            break
-                    
-                    orders.append({
-                        "id": str(uuid.uuid4()),
-                        "item_id": selected_item["item_id"],
-                        "quantity": quantity,
-                        "status": "placed",
-                        "total" : total
-                    })
-                    
+                            for item in inventory:
+                                if item["id"] == selected_item["id"]:
+                                    item["stock"] = item["stock"] - quantity
+                                    break
+                            
+                            orders.append({
+                                "id": str(uuid.uuid4()),
+                                "customer_email": st.session_state['user']['email'],
+                                "item_id": selected_item["id"],
+                                "quantity": quantity,
+                                "status": "placed",
+                                "total" : total
+                            })
+                            
+                            with open(json_inv, "w") as f:
+                                json.dump(inventory,f)
 
-                    with open(json_path_inventory, "w") as f:
-                        json.dump(inventory,f)
+                            with open(json_order, "w") as f:
+                                json.dump(orders, f)
 
-                    with open(json_path_orders, "w") as f:
-                        json.dump(orders, f)
+                            st.success('Order placed successfully!')
+                            st.balloons()
+                            time.sleep(3)
+                            st.session_state["page"] = "Home"
+                            st.rerun()
 
-                    st.balloons()
-                    
-                    time.sleep(8)
+            with col2:
+                st.subheader("AI Assistant")
+                col11, col22 = st.columns([3,1])
+                with col11:
+                    st.caption("Try asking: How do I place an order")
+                with col22:
+                    if st.button("Clear Messages"):
+                        pass
+                
+                with st.container(border= True, height=250):
+                    for message in st.session_state["messages"]:
+                        with st.chat_message(message["role"]):
+                            st.write(message["content"])
 
-                    st.session_state["page"] = "home"
-                    st.rerun()
+                user_input = st.chat_input("Ask a question....")
+                if user_input:
+                    with st.spinner("Thinking..."):
+                        st.session_state["messages"].append(
+                            {
+                                "role": "user",
+                                "content": user_input
+                            }
+                        )
+                        ai_response = "I am working on it."
 
-        with col2:
-            st.subheader("AI Assistant")
-            col11, col22 = st.columns([3,1])
-            with col11:
-                st.caption("Try asking: How do I place an order")
-            with col22:
-                if st.button("Clear Messages"):
-                    pass
-            
-            with st.container(border= True, height=250):
-                for message in st.session_state["messages"]:
-                    with st.chat_message(message["role"]):
-                        st.write(message["content"])
+                        # response is generated by ai
+                        st.session_state["messages"].append(
+                            {
+                                "role": "assistant",
+                                "content": ai_response
+                            }
+                        )
+                        time.sleep(2)
+                        st.rerun()
 
+        with tab2:
+            st.markdown('### Cancel an Order')
+            current_user_email = st.session_state["user"]["email"]
 
-            user_input = st.chat_input("Ask a question....")
-            if user_input:
-                with st.spinner("Thinking..."):
-                    st.session_state["messages"].append(
-                        {
-                            "role": "user",
-                            "content": user_input
-                        }
+            customer_orders = []
+            for order in orders:
+                if order["customer_email"] == current_user_email:
+                    customer_orders.append(order)
+
+            active_orders = []
+            for order in customer_orders:
+                if order["status"] == "placed":
+                    active_orders.append(order)
+
+            if len(customer_orders) == 0:
+                st.info("You have not placed any orders yet.")
+
+            else:
+                st.markdown("#### Your Orders")
+                st.dataframe(customer_orders)
+
+                if len(active_orders) == 0:
+                    st.info("You do not have any active orders to cancel.")
+
+                else:
+                    selected_order = st.selectbox(
+                        "Select an order to cancel",
+                        options=active_orders,
+                        format_func=lambda o: f"{o['item_name']} | Quantity: {o['quantity']} | Total: ${o['total']} | Status: {o['status']}"
                     )
-                    ai_respone = "I am working on it."
 
-                    # response is generated by ai
-                    st.session_state["messages"].append(
-                        {
-                            "role": "assistant",
-                            "content": ai_respone
-                        }
-                    )
-                    time.sleep(2)
-                    st.rerun()
+                    if st.button("Cancel Order", key="cancel_order_btn", type="primary", use_container_width=True):
+                        with st.spinner("Processing cancellation..."):
+                            for order in orders:
+                                if order["id"] == selected_order["id"]:
+                                    order["status"] = "cancelled"
+
+                                    for item in inventory:
+                                        if item["id"] == order["item_id"]:
+                                            item["stock"] = item["stock"] + order["quantity"]
+                                            break
+                                    break
+
+                            with open(json_inv, "w") as f:
+                                json.dump(inventory, f)
+
+                            with open(json_order, "w") as f:
+                                json.dump(orders, f)
+
+                            st.success("Order cancelled successfully!")
+                            time.sleep(2)
+                            st.rerun()
 
 
 elif st.session_state['role'] == 'Owner':
-    
+    pass
 
 else:
 
@@ -159,7 +208,7 @@ else:
                     st.session_state["logged_in"] = True
                     st.session_state["user"] = found_user
                     st.session_state["role"] = found_user["role"]
-                    st.session_state["page"] = "home"
+                    st.session_state["page"] = "Home"
 
 
                     time.sleep(2)

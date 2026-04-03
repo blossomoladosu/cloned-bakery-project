@@ -1,0 +1,2 @@
+[{"id": "c6a4e34d-82bb-41b2-bbe0-2818761a1590","customer_email": "customer@bakery.com", "item_id": 2, "quantity": 2, "status": "placed", "total": 8.5}, 
+{"id": "1f7247af-e514-46ad-b01d-dce0510c9930", "customer_email": "customer@bakery.com", "item_id": 1, "quantity": 1, "status": "placed", "total": 2.5}]

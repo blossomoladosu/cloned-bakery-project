@@ -1,12 +1,1 @@
-[
-    {"id": 1,
-     "email": "customer@bakery.com",
-     "full_name": "Sarah Johnson",
-     "password": "123sarahpassword",
-     "role": "Customer"},
-    {"id": 2,
-     "email": "owner@bakery.com",
-     "full_name": "Steve Smith",
-     "password": "456stevepassword",
-     "role": "Owner"}
-]
+[{"id": 1, "email": "customer@bakery.com", "full_name": "Sarah Johnson", "password": "123sarahpassword", "role": "Customer"}, {"id": 2, "email": "owner@bakery.com", "full_name": "Steve Smith", "password": "456stevepassword", "role": "Owner"}]

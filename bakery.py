@@ -100,58 +100,58 @@ if st.session_state['role'] == 'Customer' and st.session_state['logged_in']:
                         st.success("Added to cart!")
                         st.rerun()
 
-                # AI Chatbox
-                with col2:
-                    st.subheader("AI Assistant")
-                    st.caption("Try asking:")
-                    st.caption("- How do I place an order?")
-                    st.caption("- How do I cancel an order?")
-                    st.caption("- What items are available?")
+            # AI Chatbox
+            with col2:
+                st.subheader("AI Assistant")
+                st.caption("Try asking:")
+                st.caption("- How do I place an order?")
+                st.caption("- How do I cancel an order?")
+                st.caption("- What items are available?")
 
-                    if st.button("Clear Messages"):
-                        st.session_state["messages"] = []
+                if st.button("Clear Messages"):
+                    st.session_state["messages"] = []
 
-                    for message in st.session_state["messages"]:
-                        if message["role"] == "User":
-                            with st.chat_message("user"):
-                                st.write(message["content"])
-                        else:
-                            with st.chat_message("assistant"):
-                                st.write(message["content"])
+                for message in st.session_state["messages"]:
+                    if message["role"] == "User":
+                        with st.chat_message("user"):
+                            st.write(message["content"])
+                    else:
+                        with st.chat_message("assistant"):
+                            st.write(message["content"])
 
-                    # User input
-                    user_input = st.text_input("Ask a question:")
+                # User input
+                user_input = st.text_input("Ask a question:")
 
-                    if st.button("Send"):
-                        if user_input:
+                if st.button("Send"):
+                    if user_input:
                             
-                            st.session_state["messages"].append({
-                                "role": "User",
-                                "content": user_input
-                            })
+                        st.session_state["messages"].append({
+                            "role": "User",
+                            "content": user_input
+                        })
 
-                            # Generate AI response
-                            if "order" in user_input.lower():
-                                ai_response = "To place an order, go to Browse Items, add items to cart, then checkout."
+                        # Generate AI response
+                        if "order" in user_input.lower():
+                            ai_response = "To place an order, go to Browse Items, add items to cart, then checkout."
 
-                            elif "cancel" in user_input.lower():
-                                ai_response = "Go to the Cancel Order tab and choose an order."
+                        elif "cancel" in user_input.lower():
+                            ai_response = "Go to the Cancel Order tab and choose an order."
 
-                            elif "items" in user_input.lower():
-                                ai_response = "All items are listed in the Browse Items tab."
+                        elif "items" in user_input.lower():
+                            ai_response = "All items are listed in the Browse Items tab."
 
-                            else:
-                                ai_response = "Try one of the suggested questions."
+                        else:
+                            ai_response = "Try one of the suggested questions."
 
-                            st.session_state["messages"].append({
-                                "role": "Assistant",
-                                "content": ai_response
-                            })
+                        st.session_state["messages"].append({
+                            "role": "Assistant",
+                            "content": ai_response
+                        })
 
-                            st.rerun()  
+                        st.rerun()  
 
-                if st.button("Go to Cart"):
-                    st.info("Click on the Cart tab at the top to view your cart.")
+            if st.button("Go to Cart"):
+                st.info("Click on the Cart tab at the top to view your cart.")
         
         with tab2:
             st.subheader("Your Cart")
@@ -167,9 +167,9 @@ if st.session_state['role'] == 'Customer' and st.session_state['logged_in']:
                     item_total = item['price'] * item['quantity']
                     total_cost += item_total
 
-                    st.write(f"{item['item_name']} | Qty: {item['quantity']} | Total: ${item_total}")
+                    st.write(f"{item['item_name']} | Qty: {item['quantity']} | Total: ${item_total:.2f}")
 
-                st.markdown(f'### Total: ${total_cost}')
+                st.markdown(f'### Total: ${total_cost:.2f}')
 
                 if st.button("Checkout", key="checkout_tab2"):
 
@@ -188,7 +188,7 @@ if st.session_state['role'] == 'Customer' and st.session_state['logged_in']:
                             "item_name": cart_item["item_name"],
                             "quantity": cart_item["quantity"],
                             "status": "Placed",
-                            "total": cart_item["price"] * cart_item["quantity"]
+                            "total": round(cart_item["price"] * cart_item["quantity"], 2)
                         })
 
                     
@@ -265,6 +265,8 @@ if st.session_state['role'] == 'Customer' and st.session_state['logged_in']:
 
                         # UPDATING ORDER
                         selected_order["quantity"] = new_quantity
+                        selected_order["total"] = selected_order["quantity"] * next(
+                            item["price"] for item in inventory if item["name"] == selected_order["item_name"])
 
                         with open(json_inv, "w") as f:
                             json.dump(inventory, f)
@@ -433,6 +435,7 @@ else:
     # --- REGISTRATION ---
     st.subheader("New Customer Account")
     with st.container(border=True):
+        new_full_name = st.text_input("Full Name", key="full_name_register")
         new_email = st.text_input("Email", key= "email_register")
         new_password = st.text_input("Password", type="password", key= "password_edit")
         
@@ -448,9 +451,13 @@ else:
                 if existing_user:
                     st.error("An account with that email already exists.")
 
+                elif not new_full_name or not new_email or not new_password:
+                    st.error("Please fill in all fields.")
+
                 else:
                     users.append({
                         "id": str(uuid.uuid4()),
+                        "full_name": new_full_name,
                         "email": new_email,
                         "password": new_password,
                         "role": "Customer"
